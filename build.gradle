@@ -1,0 +1,69 @@
+plugins {
+    id 'nebula.kotlin' version '1.0.6'
+    id 'nebula.project' version '3.3.0'
+//    id 'nebula.release' version '4.1.0'
+    id 'nebula.maven-publish' version '4.9.1'
+    id 'nebula.nebula-bintray' version '3.3.4'
+}
+
+group 'au.com.console'
+
+compileKotlin {
+    kotlinOptions { languageVersion = "1.0" }
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compileOnly "org.springframework:spring-context:4.2.7.RELEASE"
+    compile group: 'org.elasticsearch', name: 'elasticsearch', version: '5.0.1'
+    compile "org.elasticsearch.client:transport:5.0.1"
+
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version:'2.8.0'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version:'2.8.0'
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-joda', version:'2.8.0'
+    compile "com.fasterxml.jackson.module:jackson-module-kotlin:2.8.0"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.8.0"
+    compile group: 'org.springframework.data', name: 'spring-data-commons', version: '1.12.5.RELEASE'
+
+    testCompile group: 'junit', name: 'junit', version:'4.11'
+    testCompile group: 'org.mockito', name: 'mockito-core', version:'1.9.5'
+    testCompile group: 'org.hamcrest', name: 'hamcrest-all', version:'1.3'
+    testCompile group: 'org.powermock', name: 'powermock-module-junit4', version:'1.5.3'
+    testCompile group: 'org.powermock', name: 'powermock-api-mockito', version:'1.5.3'
+    testCompile group: 'ch.qos.logback', name: 'logback-classic', version:'1.1.7'
+}
+
+tasks.bintrayUpload.dependsOn tasks.check
+tasks.artifactoryPublish.dependsOn tasks.check
+
+gradle.taskGraph.whenReady { graph ->
+    tasks.bintrayUpload.onlyIf {
+        graph.hasTask(':final') || graph.hasTask(':candidate')
+    }
+    tasks.artifactoryPublish.onlyIf {
+        graph.hasTask(':snapshot') || graph.hasTask(':devSnapshot')
+    }
+}
+
+bintray {
+    user = System.getenv('BINTRAY_USER')
+    key = System.getenv('BINTRAY_KEY')
+    publications = ['nebula']
+    pkg {
+        repo = 'kotlin'
+        userOrg = 'consoleau'
+        name = 'spring-data-eskotlin'
+        licenses = ['Apache-2.0']
+        labels = ['kotlin','spring', 'elasticsearch']
+        websiteUrl = "https://github.com/consoleau/${project.name}"
+        issueTrackerUrl = "https://github.com/consoleau/${project.name}/issues"
+        vcsUrl = "https://github.com/consoleau/${project.name}.git"
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = "3.0"
+}
